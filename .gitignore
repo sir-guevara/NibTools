@@ -12,30 +12,30 @@ target/
 # Environment files
 .env
 .env.*
-
+*/.env
 # IDEs
 .vscode/
 .idea/
 
 # OS files
 .DS_Store
-Thumbs.db
+*/Thumbs.db
 
 # GTK / GObject generated files
-*.gresource
-*.ui~
-*.glade~
-*.schema
-*.stamp
+*/*.gresource
+*/*.ui~
+*/*.glade~
+*/*.schema
+*/*.stamp
 
 # Build system files
-build/
-dist/
-out/
+*/build/
+*/dist/
+*/out/
 
 # Meson (if used with GTK)
 .meson/
-builddir/
+*/builddir/
 
 # Flatpak build files
 .flatpak-builder/
