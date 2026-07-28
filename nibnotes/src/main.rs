@@ -15,8 +15,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const APP_ID: &str = "dev.nibtools.NibNotes";
 const ICON_NAME: &str = "nibnotes";
 const ICON_SEARCH_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/icons");
-const UNCHECKED: &str = "☐ ";
-const CHECKED: &str = "☑ ";
+const UNCHECKED: &str = "- [ ] ";
+const CHECKED: &str = "- [x] ";
+const LEGACY_UNCHECKED: &str = "☐ ";
+const LEGACY_CHECKED: &str = "☑ ";
 
 const GRUVBOX_THEME_CSS: &str = r#"
 window.nibnotes {
@@ -33,7 +35,7 @@ textview text {
 textview {
   color: #ebdbb2;
   caret-color: #fe8019;
-  font-family: monospace;
+  font-family: sans-serif;
   font-size: 14px;
 }
 
@@ -65,13 +67,19 @@ scrollbar slider {
 
 .body {
   color: #ebdbb2;
-  font-family: monospace;
+  font-family: sans-serif;
   font-size: 12px;
 }
 
 .hint {
   color: #928374;
   font-size: 10px;
+}
+
+.empty-hint {
+  color: #928374;
+  font-size: 12px;
+  padding: 30px 34px;
 }
 
 entry {
@@ -97,17 +105,94 @@ listbox row:selected {
 }
 
 .quick-panel {
-  min-width: 340px;
-  padding: 14px 16px;
+  min-width: 620px;
+  min-height: 430px;
+  padding: 14px;
+  border-radius: 0;
+  background: #1b1b1b;
+  border: 1px solid #3c3836;
+  box-shadow: none;
 }
 
 .quick-entry {
-  min-height: 28px;
-  padding: 5px 8px;
+  min-height: 25px;
+  padding: 4px 9px;
+  background: #191919;
+  border: 1px solid #2a2a2a;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.quick-list row {
-  padding: 5px 8px;
+.quick-entry text {
+  background: #191919;
+}
+
+.quick-list,
+list.quick-list,
+listbox.quick-list,
+.quick-panel list,
+.quick-panel listbox {
+  background: #1b1b1b;
+}
+
+list.quick-list row,
+listbox.quick-list row,
+.quick-panel row {
+  min-height: 31px;
+  padding: 0;
+  margin: 1px 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+list.quick-list row *,
+listbox.quick-list row *,
+.quick-panel row * {
+  background: transparent;
+}
+
+list.quick-list row:hover,
+listbox.quick-list row:hover,
+.quick-panel row:hover {
+  background: #202020;
+}
+
+list.quick-list row:selected,
+list.quick-list row:selected:hover,
+list.quick-list row:selected:focus,
+listbox.quick-list row:selected,
+listbox.quick-list row:selected:hover,
+listbox.quick-list row:selected:focus,
+.quick-panel row:selected,
+.quick-panel row:selected:hover,
+.quick-panel row:selected:focus {
+  background: #242424;
+  color: #ebdbb2;
+}
+
+list.quick-list row:selected label,
+listbox.quick-list row:selected label {
+  color: #ebdbb2;
+}
+
+list.quick-list row:selected .quick-row-marker,
+listbox.quick-list row:selected .quick-row-marker,
+.quick-panel row:selected .quick-row-marker {
+  color: #928374;
+}
+
+.quick-row {
+  padding: 4px 2px;
+}
+
+.quick-row-title {
+  color: #ebdbb2;
+  font-size: 12px;
+}
+
+.quick-row-marker {
+  color: #928374;
+  font-size: 9px;
 }
 "#;
 
@@ -126,7 +211,7 @@ textview text {
 textview {
   color: #cdd6f4;
   caret-color: #f5c2e7;
-  font-family: monospace;
+  font-family: sans-serif;
   font-size: 14px;
 }
 
@@ -158,13 +243,19 @@ scrollbar slider {
 
 .body {
   color: #cdd6f4;
-  font-family: monospace;
+  font-family: sans-serif;
   font-size: 12px;
 }
 
 .hint {
   color: #7f849c;
   font-size: 10px;
+}
+
+.empty-hint {
+  color: #7f849c;
+  font-size: 12px;
+  padding: 30px 34px;
 }
 
 entry {
@@ -190,24 +281,101 @@ listbox row:selected {
 }
 
 .quick-panel {
-  min-width: 340px;
-  padding: 14px 16px;
+  min-width: 620px;
+  min-height: 430px;
+  padding: 14px;
+  border-radius: 0;
+  background: #15151f;
+  border: 1px solid #313244;
+  box-shadow: none;
 }
 
 .quick-entry {
-  min-height: 28px;
-  padding: 5px 8px;
+  min-height: 25px;
+  padding: 4px 9px;
+  background: #11111b;
+  border: 1px solid #292a3b;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.quick-list row {
-  padding: 5px 8px;
+.quick-entry text {
+  background: #11111b;
+}
+
+.quick-list,
+list.quick-list,
+listbox.quick-list,
+.quick-panel list,
+.quick-panel listbox {
+  background: #15151f;
+}
+
+list.quick-list row,
+listbox.quick-list row,
+.quick-panel row {
+  min-height: 31px;
+  padding: 0;
+  margin: 1px 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+list.quick-list row *,
+listbox.quick-list row *,
+.quick-panel row * {
+  background: transparent;
+}
+
+list.quick-list row:hover,
+listbox.quick-list row:hover,
+.quick-panel row:hover {
+  background: #1b1b28;
+}
+
+list.quick-list row:selected,
+list.quick-list row:selected:hover,
+list.quick-list row:selected:focus,
+listbox.quick-list row:selected,
+listbox.quick-list row:selected:hover,
+listbox.quick-list row:selected:focus,
+.quick-panel row:selected,
+.quick-panel row:selected:hover,
+.quick-panel row:selected:focus {
+  background: #20202b;
+  color: #cdd6f4;
+}
+
+list.quick-list row:selected label,
+listbox.quick-list row:selected label {
+  color: #cdd6f4;
+}
+
+list.quick-list row:selected .quick-row-marker,
+listbox.quick-list row:selected .quick-row-marker,
+.quick-panel row:selected .quick-row-marker {
+  color: #7f849c;
+}
+
+.quick-row {
+  padding: 4px 2px;
+}
+
+.quick-row-title {
+  color: #cdd6f4;
+  font-size: 12px;
+}
+
+.quick-row-marker {
+  color: #7f849c;
+  font-size: 9px;
 }
 "#;
 
 const CUSTOM_THEME_TEMPLATE_CSS: &str = r#"/*
 NibNotes custom theme.
 
-Set `"theme": "custom"` in config.json to use this file.
+Paste this into app.custom_css in config.toml and set app.theme = "custom".
 This is GTK CSS, so you can override any of the app selectors below.
 */
 
@@ -243,75 +411,121 @@ textview text selection {
 .hint {
   color: #928374;
 }
-"#;
 
-const DEFAULT_CONFIG_JSON: &str = r#"{
-  "theme": "gruvbox",
-  "font_family": "monospace",
-  "font_size": 14,
-  "decorated": false,
-  "window_width": 720,
-  "window_height": 760,
-  "notes_dir": null
+.empty-hint {
+  color: #928374;
+}
+
+.quick-panel {
+  background: #282828;
+  border: 1px solid #3c3836;
+  box-shadow: none;
+}
+
+.quick-entry,
+.quick-entry text {
+  background: #1d2021;
+  border: 0;
+  box-shadow: none;
 }
 "#;
 
-const EXAMPLE_SYNC_CONFIG_JSON: &str = r#"{
-  "theme": "catppuccin",
-  "font_family": "monospace",
-  "font_size": 14,
-  "decorated": false,
-  "window_width": 720,
-  "window_height": 760,
-  "notes_dir": "/Users/you/MEGA/Notes/NibNotes"
-}
-"#;
+const DEFAULT_CONFIG_TOML: &str = r##"# NibNotes user config
 
-const SYNC_FOLDERS_TEXT: &str = r#"NibNotes stores notes as plain Markdown files.
+[app]
+theme = "gruvbox" # gruvbox, catppuccin, custom
+font_family = "sans-serif"
+code_font_family = "monospace"
+font_size = 14
+decorated = false
+window_width = 720
+window_height = 760
+show_empty_hint = true
 
-Set "notes_dir" in config.json to any synced folder, for example:
+# Set this to a synced folder, or leave unset to use the app-chosen folder.
+# notes_dir = "/Users/you/MEGA/Notes/NibNotes"
 
-macOS:
-  "/Users/you/MEGA/Notes/NibNotes"
-  "/Users/you/Library/CloudStorage/Dropbox/Notes/NibNotes"
-  "/Users/you/Library/Mobile Documents/com~apple~CloudDocs/Notes/NibNotes"
+[colors]
+# Leave values commented to use the selected built-in theme defaults.
+# text_color = "#ebdbb2"
+# h1 = "#fabd2f"
+# h2 = "#fe8019"
+# h3 = "#83a598"
+# link = "#83a598"
+# checkbox = "#fabd2f"
+# code_text = "#ebdbb2"
+# code_bg = "#3c3836"
+# code_inline_text = "#8ec07c"
+# code_keyword = "#fb4934"
+# code_string = "#b8bb26"
+# code_comment = "#928374"
+# code_number = "#d3869b"
+# code_function = "#83a598"
 
-Linux:
-  "/home/you/MEGA/Notes/NibNotes"
-  "/home/you/Dropbox/Notes/NibNotes"
-  "/home/you/Nextcloud/Notes/NibNotes"
+[keys]
+new_note = "Primary+N"
+quick_open = "Primary+O"
+choose_notes_dir = "Primary+Shift+O"
+save = "Primary+S"
+save_quit = "Primary+Q"
+show_help = "Primary+M"
+insert_checkbox = "Primary+T"
+toggle_checkbox = "Primary+Enter"
+increase_font = "Primary+Plus"
+decrease_font = "Primary+Minus"
+reset_font = "Primary+0"
+trash_note = "Primary+Shift+Delete"
 
-Windows:
-  "C:\\Users\\you\\OneDrive\\Notes\\NibNotes"
-  "C:\\Users\\you\\Dropbox\\Notes\\NibNotes"
-"#;
+# Used only when app.theme = "custom".
+# custom_css = """
+# window.nibnotes { background: #1d2021; }
+# textview, textview text { background: #1d2021; color: #ebdbb2; }
+# .title { color: #fabd2f; }
+# """
+"##;
 
-const THEME_HELP_TEXT: &str = r#"NibNotes built-in themes:
+const CONFIG_EXAMPLE_TOML: &str = r##"# Example NibNotes config.
 
-  gruvbox
-  catppuccin
-  custom
+[app]
+theme = "catppuccin" # gruvbox, catppuccin, custom
+font_family = "sans-serif"
+code_font_family = "monospace"
+font_size = 14
+decorated = false
+window_width = 720
+window_height = 760
+show_empty_hint = true
 
-Set "theme" in config.json.
+# Notes are plain Markdown files. Use any synced folder here.
+notes_dir = "/Users/you/MEGA/Notes/NibNotes"
 
-Use "custom" to load theme.css from this folder.
-"#;
+[colors]
+# Optional overrides.
+# h1 = "#f9e2af"
+# h2 = "#fab387"
+# h3 = "#89b4fa"
+# link = "#89b4fa"
 
-const DEFAULT_KEYS_JSON: &str = r#"{
-  "new_note": "Primary+N",
-  "quick_open": "Primary+O",
-  "choose_notes_dir": "Primary+Shift+O",
-  "save": "Primary+S",
-  "save_quit": "Primary+Q",
-  "show_help": "Primary+M",
-  "insert_checkbox": "Primary+T",
-  "toggle_checkbox": "Primary+Enter",
-  "increase_font": "Primary+Plus",
-  "decrease_font": "Primary+Minus",
-  "reset_font": "Primary+0",
-  "trash_note": "Primary+Shift+Delete"
-}
-"#;
+[keys]
+new_note = "Primary+N"
+quick_open = "Primary+O"
+choose_notes_dir = "Primary+Shift+O"
+save = "Primary+S"
+save_quit = "Primary+Q"
+show_help = "Primary+M"
+insert_checkbox = "Primary+T"
+toggle_checkbox = "Primary+Enter"
+increase_font = "Primary+Plus"
+decrease_font = "Primary+Minus"
+reset_font = "Primary+0"
+trash_note = "Primary+Shift+Delete"
+
+# custom_css is used only when theme = "custom".
+# custom_css = """
+# window.nibnotes { background: #1d2021; }
+# textview, textview text { background: #1d2021; color: #ebdbb2; }
+# """
+"##;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Settings {
@@ -347,27 +561,160 @@ impl Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
-struct DotConfig {
+struct AppSection {
     theme: String,
     font_family: String,
+    code_font_family: String,
     font_size: i32,
     decorated: bool,
     window_width: i32,
     window_height: i32,
+    show_empty_hint: bool,
     notes_dir: Option<PathBuf>,
+    custom_css: Option<String>,
+}
+
+impl Default for AppSection {
+    fn default() -> Self {
+        Self {
+            theme: "gruvbox".to_string(),
+            font_family: "sans-serif".to_string(),
+            code_font_family: "monospace".to_string(),
+            font_size: 14,
+            decorated: false,
+            window_width: 720,
+            window_height: 760,
+            show_empty_hint: true,
+            notes_dir: None,
+            custom_css: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+struct DotConfig {
+    app: AppSection,
+    colors: ColorOverrides,
+    keys: HashMap<String, String>,
 }
 
 impl Default for DotConfig {
     fn default() -> Self {
         Self {
-            theme: "gruvbox".to_string(),
-            font_family: "monospace".to_string(),
-            font_size: 14,
-            decorated: false,
-            window_width: 720,
-            window_height: 760,
-            notes_dir: None,
+            app: AppSection::default(),
+            colors: ColorOverrides::default(),
+            keys: default_key_specs()
+                .into_iter()
+                .map(|(name, _, fallback)| (name.to_string(), fallback.to_string()))
+                .collect(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+struct ColorOverrides {
+    text_color: Option<String>,
+    h1: Option<String>,
+    h2: Option<String>,
+    h3: Option<String>,
+    link: Option<String>,
+    checkbox: Option<String>,
+    code_text: Option<String>,
+    code_bg: Option<String>,
+    code_inline_text: Option<String>,
+    code_keyword: Option<String>,
+    code_string: Option<String>,
+    code_comment: Option<String>,
+    code_number: Option<String>,
+    code_function: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct ThemePalette {
+    text_color: String,
+    h1: String,
+    h2: String,
+    h3: String,
+    link: String,
+    checkbox: String,
+    code_text: String,
+    code_bg: String,
+    code_inline_text: String,
+    code_keyword: String,
+    code_string: String,
+    code_comment: String,
+    code_number: String,
+    code_function: String,
+}
+
+impl ThemePalette {
+    fn from_config(config: &DotConfig) -> Self {
+        let mut palette = match config.app.theme.trim().to_lowercase().as_str() {
+            "catppuccin" | "catppuccin-mocha" | "mocha" => Self::catppuccin(),
+            _ => Self::gruvbox(),
+        };
+        let colors = &config.colors;
+        override_color(&mut palette.text_color, &colors.text_color);
+        override_color(&mut palette.h1, &colors.h1);
+        override_color(&mut palette.h2, &colors.h2);
+        override_color(&mut palette.h3, &colors.h3);
+        override_color(&mut palette.link, &colors.link);
+        override_color(&mut palette.checkbox, &colors.checkbox);
+        override_color(&mut palette.code_text, &colors.code_text);
+        override_color(&mut palette.code_bg, &colors.code_bg);
+        override_color(&mut palette.code_inline_text, &colors.code_inline_text);
+        override_color(&mut palette.code_keyword, &colors.code_keyword);
+        override_color(&mut palette.code_string, &colors.code_string);
+        override_color(&mut palette.code_comment, &colors.code_comment);
+        override_color(&mut palette.code_number, &colors.code_number);
+        override_color(&mut palette.code_function, &colors.code_function);
+        palette
+    }
+
+    fn gruvbox() -> Self {
+        Self {
+            text_color: "#ebdbb2".to_string(),
+            h1: "#fabd2f".to_string(),
+            h2: "#fe8019".to_string(),
+            h3: "#83a598".to_string(),
+            link: "#83a598".to_string(),
+            checkbox: "#fabd2f".to_string(),
+            code_text: "#ebdbb2".to_string(),
+            code_bg: "#3c3836".to_string(),
+            code_inline_text: "#8ec07c".to_string(),
+            code_keyword: "#fb4934".to_string(),
+            code_string: "#b8bb26".to_string(),
+            code_comment: "#928374".to_string(),
+            code_number: "#d3869b".to_string(),
+            code_function: "#83a598".to_string(),
+        }
+    }
+
+    fn catppuccin() -> Self {
+        Self {
+            text_color: "#cdd6f4".to_string(),
+            h1: "#f9e2af".to_string(),
+            h2: "#fab387".to_string(),
+            h3: "#89b4fa".to_string(),
+            link: "#89b4fa".to_string(),
+            checkbox: "#f9e2af".to_string(),
+            code_text: "#cdd6f4".to_string(),
+            code_bg: "#313244".to_string(),
+            code_inline_text: "#a6e3a1".to_string(),
+            code_keyword: "#f38ba8".to_string(),
+            code_string: "#a6e3a1".to_string(),
+            code_comment: "#7f849c".to_string(),
+            code_number: "#f5c2e7".to_string(),
+            code_function: "#89b4fa".to_string(),
+        }
+    }
+}
+
+fn override_color(target: &mut String, value: &Option<String>) {
+    if let Some(value) = value.as_ref().filter(|value| !value.trim().is_empty()) {
+        *target = value.trim().to_string();
     }
 }
 
@@ -376,7 +723,7 @@ impl DotConfig {
         ensure_dotfiles();
         fs::read_to_string(config_path())
             .ok()
-            .and_then(|text| serde_json::from_str::<DotConfig>(&text).ok())
+            .and_then(|text| toml::from_str::<DotConfig>(&text).ok())
             .unwrap_or_default()
     }
 }
@@ -456,17 +803,15 @@ struct KeyMap {
 }
 
 impl KeyMap {
-    fn load() -> Self {
-        ensure_dotfiles();
-        let raw = fs::read_to_string(keys_path())
-            .ok()
-            .and_then(|text| serde_json::from_str::<HashMap<String, String>>(&text).ok())
-            .unwrap_or_default();
-
+    fn load(config: &DotConfig) -> Self {
         let bindings = default_key_specs()
             .into_iter()
             .filter_map(|(name, action, fallback)| {
-                let spec = raw.get(name).map(String::as_str).unwrap_or(fallback);
+                let spec = config
+                    .keys
+                    .get(name)
+                    .map(String::as_str)
+                    .unwrap_or(fallback);
                 KeyBinding::parse(spec).map(|binding| (action, binding))
             })
             .collect();
@@ -486,6 +831,7 @@ struct AppState {
     window: gtk::ApplicationWindow,
     buffer: sourceview::Buffer,
     view: sourceview::View,
+    empty_hint: gtk::Label,
     help_panel: gtk::Box,
     quick_panel: gtk::Box,
     quick_entry: gtk::SearchEntry,
@@ -541,7 +887,11 @@ fn register_app_icon() {
     gtk::Window::set_default_icon_name(ICON_NAME);
 }
 
-fn build_render_tags(buffer: &sourceview::Buffer) -> RenderTags {
+fn build_render_tags(
+    buffer: &sourceview::Buffer,
+    palette: &ThemePalette,
+    code_font_family: &str,
+) -> RenderTags {
     let tags = RenderTags {
         marker: gtk::TextTag::builder()
             .name("md-marker")
@@ -549,18 +899,27 @@ fn build_render_tags(buffer: &sourceview::Buffer) -> RenderTags {
             .build(),
         heading1: gtk::TextTag::builder()
             .name("heading1")
-            .foreground("#fabd2f")
+            .foreground(&palette.h1)
             .weight(700)
+            .scale(1.55)
+            .pixels_above_lines(8)
+            .pixels_below_lines(5)
             .build(),
         heading2: gtk::TextTag::builder()
             .name("heading2")
-            .foreground("#fe8019")
+            .foreground(&palette.h2)
             .weight(700)
+            .scale(1.3)
+            .pixels_above_lines(6)
+            .pixels_below_lines(4)
             .build(),
         heading3: gtk::TextTag::builder()
             .name("heading3")
-            .foreground("#83a598")
+            .foreground(&palette.h3)
             .weight(700)
+            .scale(1.12)
+            .pixels_above_lines(4)
+            .pixels_below_lines(3)
             .build(),
         bold: gtk::TextTag::builder().name("bold").weight(700).build(),
         italic: gtk::TextTag::builder()
@@ -577,7 +936,7 @@ fn build_render_tags(buffer: &sourceview::Buffer) -> RenderTags {
             .build(),
         link: gtk::TextTag::builder()
             .name("link")
-            .foreground("#83a598")
+            .foreground(&palette.link)
             .underline(pango::Underline::Single)
             .build(),
         quote: gtk::TextTag::builder()
@@ -588,35 +947,42 @@ fn build_render_tags(buffer: &sourceview::Buffer) -> RenderTags {
             .build(),
         inline_code: gtk::TextTag::builder()
             .name("inline-code")
-            .foreground("#8ec07c")
-            .background("#282828")
+            .family(code_font_family)
+            .foreground(&palette.code_inline_text)
+            .background(&palette.code_bg)
             .build(),
         code_block: gtk::TextTag::builder()
             .name("code-block")
-            .foreground("#ebdbb2")
-            .background("#282828")
+            .family(code_font_family)
+            .foreground(&palette.code_text)
+            .background(&palette.code_bg)
             .build(),
         code_keyword: gtk::TextTag::builder()
             .name("code-keyword")
-            .foreground("#fb4934")
+            .family(code_font_family)
+            .foreground(&palette.code_keyword)
             .weight(700)
             .build(),
         code_string: gtk::TextTag::builder()
             .name("code-string")
-            .foreground("#b8bb26")
+            .family(code_font_family)
+            .foreground(&palette.code_string)
             .build(),
         code_comment: gtk::TextTag::builder()
             .name("code-comment")
-            .foreground("#928374")
+            .family(code_font_family)
+            .foreground(&palette.code_comment)
             .style(pango::Style::Italic)
             .build(),
         code_number: gtk::TextTag::builder()
             .name("code-number")
-            .foreground("#d3869b")
+            .family(code_font_family)
+            .foreground(&palette.code_number)
             .build(),
         code_function: gtk::TextTag::builder()
             .name("code-function")
-            .foreground("#83a598")
+            .family(code_font_family)
+            .foreground(&palette.code_function)
             .build(),
         completed: gtk::TextTag::builder()
             .name("completed-task")
@@ -624,9 +990,10 @@ fn build_render_tags(buffer: &sourceview::Buffer) -> RenderTags {
             .build(),
         checkbox: gtk::TextTag::builder()
             .name("checkbox")
-            .foreground("#fabd2f")
+            .family("monospace")
+            .foreground(&palette.checkbox)
             .weight(700)
-            .scale(1.22)
+            .scale(1.35)
             .build(),
     };
 
@@ -666,11 +1033,11 @@ impl RenderTags {
 fn build_ui(app: &gtk::Application) {
     ensure_dotfiles();
     let dot_config = DotConfig::load();
-    let keymap = KeyMap::load();
+    let keymap = KeyMap::load(&dot_config);
     register_app_icon();
 
     let provider = gtk::CssProvider::new();
-    provider.load_from_data(&load_theme_css(&dot_config.theme));
+    provider.load_from_data(&load_theme_css(&dot_config));
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("GTK display"),
         &provider,
@@ -686,9 +1053,9 @@ fn build_ui(app: &gtk::Application) {
 
     let mut settings = Settings::load();
     if settings.font_size == 14 {
-        settings.font_size = dot_config.font_size;
+        settings.font_size = dot_config.app.font_size;
     }
-    if let Some(notes_dir) = dot_config.notes_dir.clone() {
+    if let Some(notes_dir) = dot_config.app.notes_dir.clone() {
         settings.notes_dir = notes_dir;
     }
     let _ = fs::create_dir_all(&settings.notes_dir);
@@ -699,11 +1066,12 @@ fn build_ui(app: &gtk::Application) {
     }
     buffer.set_highlight_syntax(true);
 
-    let render_tags = build_render_tags(&buffer);
+    let palette = ThemePalette::from_config(&dot_config);
+    let render_tags = build_render_tags(&buffer, &palette, &dot_config.app.code_font_family);
 
     let view = sourceview::View::with_buffer(&buffer);
     view.set_wrap_mode(gtk::WrapMode::WordChar);
-    view.set_monospace(true);
+    view.set_monospace(false);
     view.set_left_margin(28);
     view.set_right_margin(28);
     view.set_top_margin(24);
@@ -719,6 +1087,9 @@ fn build_ui(app: &gtk::Application) {
         .build();
     scroller.add_css_class("editor-pane");
 
+    let empty_hint = build_empty_hint();
+    empty_hint.set_visible(false);
+
     let help_panel = build_help_panel();
     help_panel.set_visible(false);
 
@@ -727,15 +1098,16 @@ fn build_ui(app: &gtk::Application) {
 
     let overlay = gtk::Overlay::new();
     overlay.set_child(Some(&scroller));
+    overlay.add_overlay(&empty_hint);
     overlay.add_overlay(&help_panel);
     overlay.add_overlay(&quick_panel);
 
     let window = gtk::ApplicationWindow::builder()
         .application(app)
         .title("NibNotes")
-        .default_width(dot_config.window_width)
-        .default_height(dot_config.window_height)
-        .decorated(dot_config.decorated)
+        .default_width(dot_config.app.window_width)
+        .default_height(dot_config.app.window_height)
+        .decorated(dot_config.app.decorated)
         .child(&overlay)
         .build();
     window.add_css_class("nibnotes");
@@ -745,6 +1117,7 @@ fn build_ui(app: &gtk::Application) {
         window,
         buffer,
         view,
+        empty_hint,
         help_panel,
         quick_panel,
         quick_entry,
@@ -767,6 +1140,7 @@ fn build_ui(app: &gtk::Application) {
     prepare_notes(&state);
     open_startup_note(&state);
     refresh_markdown_rendering(&state);
+    refresh_empty_hint(&state);
 
     state.window.present();
     state.view.grab_focus();
@@ -831,18 +1205,37 @@ fn build_help_panel() -> gtk::Box {
     panel
 }
 
+fn build_empty_hint() -> gtk::Label {
+    let primary = primary_modifier_label();
+    let text = format!(
+        "Start typing to create a note\n\n\
+{primary}+O  Open note\n\
+{primary}+N  New note\n\
+{primary}+S  Save\n\
+{primary}+M  Help"
+    );
+    let label = gtk::Label::builder()
+        .label(text)
+        .xalign(0.0)
+        .yalign(0.0)
+        .build();
+    label.add_css_class("empty-hint");
+    label.set_halign(gtk::Align::Start);
+    label.set_valign(gtk::Align::Start);
+    label.set_selectable(false);
+    label.set_can_target(false);
+    label
+}
+
 fn build_quick_panel() -> (gtk::Box, gtk::SearchEntry, gtk::ListBox) {
-    let panel = gtk::Box::new(gtk::Orientation::Vertical, 10);
+    let panel = gtk::Box::new(gtk::Orientation::Vertical, 6);
     panel.add_css_class("panel");
     panel.add_css_class("quick-panel");
     panel.set_halign(gtk::Align::Center);
     panel.set_valign(gtk::Align::Center);
 
-    let title = gtk::Label::builder().label("Open note").xalign(0.0).build();
-    title.add_css_class("title");
-    panel.append(&title);
-
     let entry = gtk::SearchEntry::new();
+    entry.set_placeholder_text(Some("Search:"));
     entry.add_css_class("quick-entry");
     panel.append(&entry);
 
@@ -850,13 +1243,6 @@ fn build_quick_panel() -> (gtk::Box, gtk::SearchEntry, gtk::ListBox) {
     list.add_css_class("quick-list");
     list.set_selection_mode(gtk::SelectionMode::Single);
     panel.append(&list);
-
-    let hint = gtk::Label::builder()
-        .label("Enter to open, Esc to close")
-        .xalign(0.0)
-        .build();
-    hint.add_css_class("hint");
-    panel.append(&hint);
 
     (panel, entry, list)
 }
@@ -867,6 +1253,7 @@ fn connect_handlers(state: &Rc<AppState>) {
         if changed_state.loading.get() {
             return;
         }
+        refresh_empty_hint(&changed_state);
 
         if let Some(id) = changed_state.style_timer.borrow_mut().take() {
             id.remove();
@@ -929,6 +1316,11 @@ fn connect_handlers(state: &Rc<AppState>) {
             close_quick_open(&activate_state);
         }
     });
+
+    let selection_state = state.clone();
+    state.quick_list.connect_selected_rows_changed(move |_| {
+        update_quick_selection_markers(&selection_state);
+    });
 }
 
 fn handle_key(state: &Rc<AppState>, key: gdk::Key, modifier: gdk::ModifierType) -> bool {
@@ -976,7 +1368,7 @@ fn run_action(state: &Rc<AppState>, action: Action) {
         Action::IncreaseFont => change_font_size(state, 1),
         Action::DecreaseFont => change_font_size(state, -1),
         Action::ResetFont => {
-            state.settings.borrow_mut().font_size = state.dot_config.font_size;
+            state.settings.borrow_mut().font_size = state.dot_config.app.font_size;
             apply_font_size(state);
             state.settings.borrow().save();
         }
@@ -1041,6 +1433,7 @@ fn load_note(state: &Rc<AppState>, path: PathBuf) {
     }
     state.loading.set(false);
     refresh_markdown_rendering(state);
+    refresh_empty_hint(state);
 }
 
 fn save_note(state: &Rc<AppState>) {
@@ -1193,12 +1586,7 @@ fn populate_quick_open(state: &Rc<AppState>) {
         let row = gtk::ListBoxRow::new();
         row.set_selectable(true);
         row.set_activatable(true);
-        row.set_child(Some(
-            &gtk::Label::builder()
-                .label(note_title(&path))
-                .xalign(0.0)
-                .build(),
-        ));
+        row.set_child(Some(&quick_open_row(&path)));
         unsafe {
             row.set_data("path", path);
         }
@@ -1208,6 +1596,7 @@ fn populate_quick_open(state: &Rc<AppState>) {
     if let Some(row) = state.quick_list.row_at_index(0) {
         state.quick_list.select_row(Some(&row));
     }
+    update_quick_selection_markers(state);
 }
 
 fn open_selected_quick_note(state: &Rc<AppState>) {
@@ -1216,6 +1605,57 @@ fn open_selected_quick_note(state: &Rc<AppState>) {
             load_note(state, path);
             close_quick_open(state);
         }
+    }
+}
+
+fn quick_open_row(path: &Path) -> gtk::Box {
+    let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    row.add_css_class("quick-row");
+    row.set_hexpand(true);
+    row.set_valign(gtk::Align::Center);
+
+    let marker = gtk::Label::builder()
+        .label(" ")
+        .width_chars(1)
+        .xalign(0.0)
+        .build();
+    marker.add_css_class("quick-row-marker");
+    row.append(&marker);
+
+    let title = gtk::Label::builder()
+        .label(note_title(path))
+        .ellipsize(pango::EllipsizeMode::End)
+        .xalign(0.0)
+        .build();
+    title.add_css_class("quick-row-title");
+    title.set_hexpand(true);
+    row.append(&title);
+
+    row
+}
+
+fn update_quick_selection_markers(state: &Rc<AppState>) {
+    let selected = state.quick_list.selected_row().map(|row| row.index());
+    let mut child = state.quick_list.first_child();
+    while let Some(widget) = child {
+        child = widget.next_sibling();
+        let Ok(row) = widget.downcast::<gtk::ListBoxRow>() else {
+            continue;
+        };
+        let Some(content) = row.child() else {
+            continue;
+        };
+        let Some(marker_widget) = content.first_child() else {
+            continue;
+        };
+        let Ok(marker) = marker_widget.downcast::<gtk::Label>() else {
+            continue;
+        };
+        marker.set_label(if Some(row.index()) == selected {
+            ">"
+        } else {
+            " "
+        });
     }
 }
 
@@ -1229,7 +1669,7 @@ fn row_path(row: &gtk::ListBoxRow) -> Option<PathBuf> {
 fn insert_checkbox(state: &Rc<AppState>) {
     let (start, end) = line_bounds(&state.buffer);
     let text = state.buffer.text(&start, &end, true).to_string();
-    if text.starts_with(UNCHECKED) || text.starts_with(CHECKED) {
+    if is_checkbox_line(&text) {
         return;
     }
 
@@ -1252,10 +1692,10 @@ fn toggle_line(buffer: &sourceview::Buffer, start: &gtk::TextIter, end: &gtk::Te
         format!("{CHECKED}{rest}")
     } else if let Some(rest) = text.strip_prefix(CHECKED) {
         format!("{UNCHECKED}{rest}")
-    } else if let Some(rest) = text.strip_prefix("- [ ] ") {
+    } else if let Some(rest) = text.strip_prefix(LEGACY_UNCHECKED) {
         format!("{CHECKED}{rest}")
-    } else if text.to_lowercase().starts_with("- [x] ") {
-        format!("{UNCHECKED}{}", &text[6..])
+    } else if let Some(rest) = text.strip_prefix(LEGACY_CHECKED) {
+        format!("{UNCHECKED}{rest}")
     } else {
         format!("{UNCHECKED}{text}")
     };
@@ -1272,22 +1712,17 @@ fn toggle_line(buffer: &sourceview::Buffer, start: &gtk::TextIter, end: &gtk::Te
 fn continue_checkbox_line(state: &Rc<AppState>) -> bool {
     let (start, end) = line_bounds(&state.buffer);
     let text = state.buffer.text(&start, &end, true).to_string();
-    if let Some(rest) = text.strip_prefix("- [ ] ") {
+    if text.starts_with(UNCHECKED) || text.starts_with(CHECKED) {
+        state.buffer.insert_at_cursor(&format!("\n{UNCHECKED}"));
+        return true;
+    }
+    if let Some(rest) = text.strip_prefix(LEGACY_UNCHECKED) {
         replace_line(&state.buffer, &start, &end, &format!("{UNCHECKED}{rest}"));
         state.buffer.insert_at_cursor(&format!("\n{UNCHECKED}"));
         return true;
     }
-    if text.to_lowercase().starts_with("- [x] ") {
-        replace_line(
-            &state.buffer,
-            &start,
-            &end,
-            &format!("{CHECKED}{}", &text[6..]),
-        );
-        state.buffer.insert_at_cursor(&format!("\n{UNCHECKED}"));
-        return true;
-    }
-    if text.starts_with(UNCHECKED) || text.starts_with(CHECKED) {
+    if let Some(rest) = text.strip_prefix(LEGACY_CHECKED) {
+        replace_line(&state.buffer, &start, &end, &format!("{CHECKED}{rest}"));
         state.buffer.insert_at_cursor(&format!("\n{UNCHECKED}"));
         return true;
     }
@@ -1454,9 +1889,9 @@ fn heading_marker_len(text: &str, marker: &str) -> Option<i32> {
 }
 
 fn render_checkboxes(state: &Rc<AppState>, text: &str, line_start: &gtk::TextIter) {
-    if text.starts_with(UNCHECKED) || text.starts_with(CHECKED) {
+    if text.starts_with(LEGACY_UNCHECKED) || text.starts_with(LEGACY_CHECKED) {
         apply_char_range(state, &state.render_tags.checkbox, line_start, 0, 1);
-        if text.starts_with(CHECKED) {
+        if text.starts_with(LEGACY_CHECKED) {
             apply_char_range(
                 state,
                 &state.render_tags.completed,
@@ -1468,11 +1903,11 @@ fn render_checkboxes(state: &Rc<AppState>, text: &str, line_start: &gtk::TextIte
         return;
     }
 
-    if text.starts_with("- [ ] ") || text.to_lowercase().starts_with("- [x] ") {
+    if text.starts_with(UNCHECKED) || text.starts_with(CHECKED) {
         apply_char_range(state, &state.render_tags.marker, line_start, 0, 2);
         apply_char_range(state, &state.render_tags.checkbox, line_start, 2, 5);
         apply_char_range(state, &state.render_tags.marker, line_start, 5, 6);
-        if text.to_lowercase().starts_with("- [x] ") {
+        if text.starts_with(CHECKED) {
             apply_char_range(
                 state,
                 &state.render_tags.completed,
@@ -1697,8 +2132,8 @@ fn apply_font_size(state: &Rc<AppState>) {
     let size = state.settings.borrow().font_size;
     state.font_provider.load_from_data(&format!(
         "textview {{ font-family: {}; font-size: {size}px; }} .body {{ font-family: {}; }}",
-        css_font_family(&state.dot_config.font_family),
-        css_font_family(&state.dot_config.font_family)
+        css_font_family(&state.dot_config.app.font_family),
+        css_font_family(&state.dot_config.app.font_family)
     ));
 }
 
@@ -1717,6 +2152,12 @@ fn buffer_text(buffer: &sourceview::Buffer) -> String {
     buffer
         .text(&buffer.start_iter(), &buffer.end_iter(), true)
         .to_string()
+}
+
+fn refresh_empty_hint(state: &Rc<AppState>) {
+    let visible =
+        state.dot_config.app.show_empty_hint && buffer_text(&state.buffer).trim().is_empty();
+    state.empty_hint.set_visible(visible);
 }
 
 fn note_title(path: &Path) -> String {
@@ -1770,7 +2211,16 @@ fn note_slug(text: &str) -> Option<String> {
 fn clean_title(line: &str) -> String {
     let mut title = line.trim().to_string();
     for prefix in [
-        "###### ", "##### ", "#### ", "### ", "## ", "# ", UNCHECKED, CHECKED, "- [ ] ", "- [x] ",
+        "###### ",
+        "##### ",
+        "#### ",
+        "### ",
+        "## ",
+        "# ",
+        UNCHECKED,
+        CHECKED,
+        LEGACY_UNCHECKED,
+        LEGACY_CHECKED,
         "- [X] ",
     ] {
         if let Some(rest) = title.strip_prefix(prefix) {
@@ -1779,6 +2229,13 @@ fn clean_title(line: &str) -> String {
         }
     }
     title.replace(['*', '_', '`'], "").trim().to_string()
+}
+
+fn is_checkbox_line(text: &str) -> bool {
+    text.starts_with(UNCHECKED)
+        || text.starts_with(CHECKED)
+        || text.starts_with(LEGACY_UNCHECKED)
+        || text.starts_with(LEGACY_CHECKED)
 }
 
 fn mtime_ns(path: &Path) -> u128 {
@@ -1843,29 +2300,17 @@ fn config_dir() -> PathBuf {
 }
 
 fn config_path() -> PathBuf {
-    config_dir().join("config.json")
-}
-
-fn keys_path() -> PathBuf {
-    config_dir().join("keys.json")
-}
-
-fn theme_path() -> PathBuf {
-    config_dir().join("theme.css")
+    config_dir().join("config.toml")
 }
 
 fn ensure_dotfiles() {
     let dir = config_dir();
     let _ = fs::create_dir_all(&dir);
-    create_file_if_missing(&config_path(), DEFAULT_CONFIG_JSON);
-    create_file_if_missing(&keys_path(), DEFAULT_KEYS_JSON);
-    create_file_if_missing(&theme_path(), CUSTOM_THEME_TEMPLATE_CSS);
+    create_file_if_missing(&config_path(), DEFAULT_CONFIG_TOML);
     create_file_if_missing(
-        &config_dir().join("config.synced-folder.example.json"),
-        EXAMPLE_SYNC_CONFIG_JSON,
+        &config_dir().join("config.example.toml"),
+        CONFIG_EXAMPLE_TOML,
     );
-    create_file_if_missing(&config_dir().join("themes.txt"), THEME_HELP_TEXT);
-    create_file_if_missing(&config_dir().join("synced-folders.txt"), SYNC_FOLDERS_TEXT);
 }
 
 fn create_file_if_missing(path: &Path, contents: &str) {
@@ -1874,13 +2319,30 @@ fn create_file_if_missing(path: &Path, contents: &str) {
     }
 }
 
-fn load_theme_css(theme: &str) -> String {
-    match theme.trim().to_lowercase().as_str() {
+fn load_theme_css(config: &DotConfig) -> String {
+    let app = &config.app;
+    let mut css = match app.theme.trim().to_lowercase().as_str() {
         "catppuccin" | "catppuccin-mocha" | "mocha" => CATPPUCCIN_THEME_CSS.to_string(),
-        "custom" => fs::read_to_string(theme_path())
-            .unwrap_or_else(|_| CUSTOM_THEME_TEMPLATE_CSS.to_string()),
+        "custom" => app
+            .custom_css
+            .clone()
+            .unwrap_or_else(|| CUSTOM_THEME_TEMPLATE_CSS.to_string()),
         _ => GRUVBOX_THEME_CSS.to_string(),
+    };
+
+    if let Some(text_color) = config
+        .colors
+        .text_color
+        .as_ref()
+        .filter(|value| !value.trim().is_empty())
+    {
+        css.push_str(&format!(
+            "\ntextview, textview text {{ color: {}; }}\n.body {{ color: {}; }}\n",
+            text_color.trim(),
+            text_color.trim()
+        ));
     }
+    css
 }
 
 fn default_key_specs() -> Vec<(&'static str, Action, &'static str)> {

@@ -13,3 +13,25 @@ gio = "0.21"
 regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+toml = "0.9"
+
+[package.metadata.bundle]
+name = "NibNotes"
+identifier = "dev.nibtools.NibNotes"
+icon = [
+  "assets/icons/macos/nibnotes.iconset/icon_16x16.png",
+  "assets/icons/macos/nibnotes.iconset/icon_16x16@2x.png",
+  "assets/icons/macos/nibnotes.iconset/icon_32x32.png",
+  "assets/icons/macos/nibnotes.iconset/icon_32x32@2x.png",
+  "assets/icons/macos/nibnotes.iconset/icon_128x128.png",
+  "assets/icons/macos/nibnotes.iconset/icon_128x128@2x.png",
+  "assets/icons/macos/nibnotes.iconset/icon_256x256.png",
+  "assets/icons/macos/nibnotes.iconset/icon_256x256@2x.png",
+  "assets/icons/macos/nibnotes.iconset/icon_512x512.png",
+  "assets/icons/macos/nibnotes.iconset/icon_512x512@2x.png",
+]
+version = "0.1.0"
+copyright = "Copyright 2026"
+category = "Productivity"
+short_description = "Fast local-first Markdown notes"
+long_description = "A fast, lightweight, local-first Markdown note app."

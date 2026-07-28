@@ -55,56 +55,112 @@ sudo apt install libgtk-4-dev libgtksourceview-5-dev
 cargo run
 ```
 
+## Build Packages
+
+macOS local build:
+
+```bash
+cargo build --release
+cargo bundle --release
+```
+
+Outputs:
+
+```text
+target/release/nibnotes
+target/release/bundle/osx/NibNotes.app
+target/release/bundle/dmg/NibNotes.dmg
+```
+
+All-platform release builds are handled by GitHub Actions:
+
+```text
+.github/workflows/release.yml
+```
+
+Run the workflow manually, or push a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow builds:
+
+- macOS `.dmg` and `.app.zip`
+- Linux `tar.gz`
+- Windows `.zip` containing `nibnotes.exe` and GTK runtime DLLs
+
 ## Icon
 
 The app icon lives at:
 
 ```text
-assets/icons/hicolor/scalable/apps/nibnotes.svg
+assets/icons/hicolor/1024x1024/apps/nibnotes.png
 ```
 
-GTK uses this icon during development. Platform packages should derive their `.icns`, `.ico`, and PNG icon sizes from this SVG.
+GTK uses this icon during development. Platform packages should derive their `.icns`, `.ico`, and smaller PNG icon sizes from this 1024x1024 PNG.
 
 ## Dotfile Configuration
 
-NibNotes creates editable user config files on first launch.
+NibNotes creates one editable user config file on first launch.
 
 Linux and macOS:
 
 ```text
-~/.config/nibnotes/config.json
-~/.config/nibnotes/keys.json
-~/.config/nibnotes/theme.css
+~/.config/nibnotes/config.toml
 ```
 
 Windows:
 
 ```text
-%APPDATA%\NibNotes\config.json
-%APPDATA%\NibNotes\keys.json
-%APPDATA%\NibNotes\theme.css
+%APPDATA%\NibNotes\config.toml
 ```
 
-`config.json` controls defaults:
+`config.toml` controls app defaults, keybindings, synced note path, and custom theme CSS:
 
-```json
-{
-  "theme": "gruvbox",
-  "font_family": "monospace",
-  "font_size": 14,
-  "decorated": false,
-  "window_width": 720,
-  "window_height": 760,
-  "notes_dir": null
-}
+```toml
+[app]
+theme = "gruvbox"
+font_family = "sans-serif"
+code_font_family = "monospace"
+font_size = 14
+decorated = false
+window_width = 720
+window_height = 760
+show_empty_hint = true
+# notes_dir = "/Users/you/MEGA/Notes/NibNotes"
+
+[colors]
+# Optional overrides. Leave unset to use the selected theme defaults.
+# text_color = "#ebdbb2"
+# h1 = "#fabd2f"
+# h2 = "#fe8019"
+# h3 = "#83a598"
+# link = "#83a598"
+# code_bg = "#3c3836"
+# code_keyword = "#fb4934"
+
+[keys]
+new_note = "Primary+N"
+quick_open = "Primary+O"
+choose_notes_dir = "Primary+Shift+O"
+save = "Primary+S"
+save_quit = "Primary+Q"
+show_help = "Primary+M"
+insert_checkbox = "Primary+T"
+toggle_checkbox = "Primary+Enter"
+increase_font = "Primary+Plus"
+decrease_font = "Primary+Minus"
+reset_font = "Primary+0"
+trash_note = "Primary+Shift+Delete"
 ```
 
 `notes_dir` can point at any synced folder, such as MEGA, Dropbox, Nextcloud, iCloud Drive, or OneDrive:
 
-```json
-{
-  "notes_dir": "/Users/you/MEGA/Notes/NibNotes"
-}
+```toml
+[app]
+notes_dir = "/Users/you/MEGA/Notes/NibNotes"
 ```
 
 If `notes_dir` is `null`, NibNotes uses the last folder chosen inside the app, or falls back to `~/Documents/NibNotes`.
@@ -117,37 +173,25 @@ catppuccin
 custom
 ```
 
-Set `"theme": "custom"` to load `theme.css`.
+Set `theme = "custom"` and put GTK CSS in `custom_css`:
 
-`keys.json` controls rebindable actions:
-
-```json
-{
-  "new_note": "Primary+N",
-  "quick_open": "Primary+O",
-  "choose_notes_dir": "Primary+Shift+O",
-  "save": "Primary+S",
-  "save_quit": "Primary+Q",
-  "show_help": "Primary+M",
-  "insert_checkbox": "Primary+T",
-  "toggle_checkbox": "Primary+Enter",
-  "increase_font": "Primary+Plus",
-  "decrease_font": "Primary+Minus",
-  "reset_font": "Primary+0",
-  "trash_note": "Primary+Shift+Delete"
-}
+```toml
+[app]
+theme = "custom"
+custom_css = """
+window.nibnotes { background: #1d2021; }
+textview, textview text { background: #1d2021; color: #ebdbb2; }
+"""
 ```
+
+Code uses `code_font_family`. `font_family` changes normal note text, headings, bold, italic, lists, quotes, and the app panels.
 
 `Primary` means `Cmd` on macOS and `Ctrl` on Linux/Windows. `Cmd`, `Command`, `Ctrl`, and `CmdOrCtrl` are also accepted in custom bindings.
 
-`theme.css` is regular GTK CSS. Edit it to make custom themes. It is only active when `config.json` uses `"theme": "custom"`.
-
-NibNotes also creates helper files in the same config folder:
+NibNotes also creates one example file in the same config folder:
 
 ```text
-config.synced-folder.example.json
-themes.txt
-synced-folders.txt
+config.example.toml
 ```
 
 ## Shortcuts
