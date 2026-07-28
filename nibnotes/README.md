@@ -75,7 +75,7 @@ target/release/bundle/dmg/NibNotes.dmg
 All-platform release builds are handled by GitHub Actions:
 
 ```text
-.github/workflows/release.yml
+../.github/workflows/release.yml
 ```
 
 Run the workflow manually, or push a version tag:
