@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  macos:
+    name: macOS DMG
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: nibnotes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native dependencies
+        run: brew install gtk4 gtksourceview5 pkg-config
+      - name: Install cargo-bundle
+        run: cargo install cargo-bundle
+      - name: Build release
+        run: cargo build --release
+      - name: Bundle app and dmg
+        run: cargo bundle --release
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: NibNotes-macos-dmg
+          path: nibnotes/target/release/bundle/dmg/NibNotes.dmg
+      - name: Zip macOS app
+        run: ditto -c -k --sequesterRsrc --keepParent target/release/bundle/osx/NibNotes.app NibNotes-macos-app.zip
+      - name: Upload macOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NibNotes-macos-app
+          path: nibnotes/NibNotes-macos-app.zip
+
+  linux:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nibnotes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libgtksourceview-5-dev pkg-config
+      - name: Build release
+        run: cargo build --release
+      - name: Package Linux binary
+        run: |
+          mkdir -p dist/NibNotes
+          cp target/release/nibnotes dist/NibNotes/
+          cp README.md dist/NibNotes/
+          tar -C dist -czf NibNotes-linux-x86_64.tar.gz NibNotes
+      - name: Upload Linux tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: NibNotes-linux-x86_64
+          path: nibnotes/NibNotes-linux-x86_64.tar.gz
+
+  windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+        working-directory: nibnotes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-rust
+            mingw-w64-x86_64-gtk4
+            mingw-w64-x86_64-gtksourceview5
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-zip
+      - name: Build release exe
+        run: cargo build --release
+      - name: Package exe with GTK runtime DLLs
+        run: |
+          mkdir -p dist/NibNotes
+          cp target/release/nibnotes.exe dist/NibNotes/
+          ldd target/release/nibnotes.exe | awk '/mingw64/ { print $3 }' | sort -u | xargs -I{} cp -n "{}" dist/NibNotes/
+          mkdir -p dist/NibNotes/share/glib-2.0
+          cp -r /mingw64/share/glib-2.0/schemas dist/NibNotes/share/glib-2.0/
+          mkdir -p dist/NibNotes/share/icons
+          cp -r /mingw64/share/icons/Adwaita dist/NibNotes/share/icons/
+          cp README.md dist/NibNotes/
+          cd dist
+          zip -r ../NibNotes-windows-x86_64.zip NibNotes
+      - name: Upload Windows zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: NibNotes-windows-x86_64
+          path: nibnotes/NibNotes-windows-x86_64.zip
