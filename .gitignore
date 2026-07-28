@@ -1,0 +1,57 @@
+# Rust build output
+target/
+
+# Cargo lock (optional)
+# Keep Cargo.lock for applications, remove this line for libraries
+# Cargo.lock
+
+# Rust tooling
+**/*.rs.bk
+*.pdb
+
+# Environment files
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# GTK / GObject generated files
+*.gresource
+*.ui~
+*.glade~
+*.schema
+*.stamp
+
+# Build system files
+build/
+dist/
+out/
+
+# Meson (if used with GTK)
+.meson/
+builddir/
+
+# Flatpak build files
+.flatpak-builder/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# Backup files
+*~
+target/
+.vscode/
+.idea/
+.env
+.DS_Store
