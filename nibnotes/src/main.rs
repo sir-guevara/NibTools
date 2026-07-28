@@ -105,8 +105,6 @@ listbox row:selected {
 }
 
 .quick-panel {
-  min-width: 620px;
-  min-height: 430px;
   padding: 14px;
   border-radius: 0;
   background: #1b1b1b;
@@ -281,8 +279,6 @@ listbox row:selected {
 }
 
 .quick-panel {
-  min-width: 620px;
-  min-height: 430px;
   padding: 14px;
   border-radius: 0;
   background: #15151f;
@@ -474,7 +470,7 @@ toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
 decrease_font = "Primary+Minus"
 reset_font = "Primary+0"
-trash_note = "Primary+Shift+Delete"
+trash_note = "Primary+Shift+D"
 
 # Used only when app.theme = "custom".
 # custom_css = """
@@ -518,7 +514,7 @@ toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
 decrease_font = "Primary+Minus"
 reset_font = "Primary+0"
-trash_note = "Primary+Shift+Delete"
+trash_note = "Primary+Shift+D"
 
 # custom_css is used only when theme = "custom".
 # custom_css = """
@@ -1176,7 +1172,7 @@ fn build_help_panel() -> gtk::Box {
 {primary} Shift O    Choose notes folder\n\
 {primary} N          New note\n\
 {primary} S          Save\n\
-{primary} Shift Del  Move note to trash\n\
+{primary} Shift D    Move note to trash\n\
 {primary} Q          Save and close\n\n\
 <span foreground=\"#fe8019\" weight=\"bold\">WRITING</span>\n\
 {primary} + / -      Increase / decrease font\n\
@@ -1404,7 +1400,7 @@ fn notes(state: &Rc<AppState>) -> Vec<PathBuf> {
         .into_iter()
         .flatten()
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-        .filter(|path| path.extension().is_some_and(|ext| ext == "md"))
+        .filter(|path| path.is_file() && is_markdown_file(path))
         .collect::<Vec<_>>();
 
     files.sort_by_key(|path| {
@@ -1415,6 +1411,12 @@ fn notes(state: &Rc<AppState>) -> Vec<PathBuf> {
             .map(|duration| std::cmp::Reverse(duration.as_nanos()))
     });
     files
+}
+
+fn is_markdown_file(path: &Path) -> bool {
+    path.extension()
+        .map(|ext| ext.to_string_lossy().to_lowercase())
+        .is_some_and(|ext| ext == "md")
 }
 
 fn load_note(state: &Rc<AppState>, path: PathBuf) {
@@ -1463,6 +1465,10 @@ fn save_note(state: &Rc<AppState>) {
 }
 
 fn rename_from_title(state: &Rc<AppState>, path: &Path, text: &str) -> Option<PathBuf> {
+    if !is_generated_note_path(path) {
+        return None;
+    }
+
     let slug = note_slug(text)?;
     let stem = path.file_stem()?.to_string_lossy();
     if stem == slug || stem.starts_with(&format!("{slug}-")) {
@@ -1479,6 +1485,15 @@ fn rename_from_title(state: &Rc<AppState>, path: &Path, text: &str) -> Option<Pa
 
     fs::rename(path, &destination).ok()?;
     Some(destination)
+}
+
+fn is_generated_note_path(path: &Path) -> bool {
+    path.file_stem()
+        .map(|stem| {
+            let stem = stem.to_string_lossy();
+            stem == "untitled" || stem.starts_with("note-")
+        })
+        .unwrap_or_default()
 }
 
 fn new_note(state: &Rc<AppState>) {
@@ -1519,10 +1534,9 @@ fn trash_current_note(state: &Rc<AppState>) {
     }
     if fs::rename(&path, target).is_ok() {
         *state.current_note.borrow_mut() = None;
-        prepare_notes(state);
-        if let Some(next) = notes(state).first().cloned() {
-            load_note(state, next);
-        }
+        state.settings.borrow_mut().last_note = None;
+        state.settings.borrow().save();
+        new_note(state);
     }
 }
 
@@ -1562,9 +1576,18 @@ fn choose_notes_dir(state: &Rc<AppState>) {
 fn open_quick_open(state: &Rc<AppState>) {
     save_if_dirty(state);
     state.quick_entry.set_text("");
+    resize_quick_panel(state);
     populate_quick_open(state);
     state.quick_panel.set_visible(true);
     state.quick_entry.grab_focus();
+}
+
+fn resize_quick_panel(state: &Rc<AppState>) {
+    let width = (state.window.width() as f64 * 0.7).round() as i32;
+    let height = (state.window.height() as f64 * 0.4).round() as i32;
+    state
+        .quick_panel
+        .set_size_request(width.max(360), height.max(260));
 }
 
 fn close_quick_open(state: &Rc<AppState>) {
@@ -1580,8 +1603,7 @@ fn populate_quick_open(state: &Rc<AppState>) {
     let query = state.quick_entry.text().to_string().to_lowercase();
     for path in notes(state)
         .into_iter()
-        .filter(|path| note_title(path).to_lowercase().contains(&query))
-        .take(12)
+        .filter(|path| note_search_text(state, path).contains(&query))
     {
         let row = gtk::ListBoxRow::new();
         row.set_selectable(true);
@@ -1623,7 +1645,7 @@ fn quick_open_row(path: &Path) -> gtk::Box {
     row.append(&marker);
 
     let title = gtk::Label::builder()
-        .label(note_title(path))
+        .label(note_file_label(path))
         .ellipsize(pango::EllipsizeMode::End)
         .xalign(0.0)
         .build();
@@ -2173,6 +2195,27 @@ fn note_title(path: &Path) -> String {
         .unwrap_or_else(|| "Untitled".to_string())
 }
 
+fn note_file_label(path: &Path) -> String {
+    path.file_name()
+        .map(|file_name| file_name.to_string_lossy().to_string())
+        .unwrap_or_else(|| note_title(path))
+}
+
+fn note_search_text(state: &Rc<AppState>, path: &Path) -> String {
+    let mut text = note_file_label(path).to_lowercase();
+    text.push(' ');
+    text.push_str(&note_title(path).to_lowercase());
+    if let Some(file_name) = path.file_name() {
+        text.push(' ');
+        text.push_str(&file_name.to_string_lossy().to_lowercase());
+    }
+    if let Ok(relative) = path.strip_prefix(&state.settings.borrow().notes_dir) {
+        text.push(' ');
+        text.push_str(&relative.to_string_lossy().to_lowercase());
+    }
+    text
+}
+
 fn note_slug(text: &str) -> Option<String> {
     for line in text.lines() {
         let title = clean_title(line);
@@ -2362,7 +2405,7 @@ fn default_key_specs() -> Vec<(&'static str, Action, &'static str)> {
         ("increase_font", Action::IncreaseFont, "Primary+Plus"),
         ("decrease_font", Action::DecreaseFont, "Primary+Minus"),
         ("reset_font", Action::ResetFont, "Primary+0"),
-        ("trash_note", Action::TrashNote, "Primary+Shift+Delete"),
+        ("trash_note", Action::TrashNote, "Primary+Shift+D"),
     ]
 }
 

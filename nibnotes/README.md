@@ -153,7 +153,7 @@ toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
 decrease_font = "Primary+Minus"
 reset_font = "Primary+0"
-trash_note = "Primary+Shift+Delete"
+trash_note = "Primary+Shift+D"
 ```
 
 `notes_dir` can point at any synced folder, such as MEGA, Dropbox, Nextcloud, iCloud Drive, or OneDrive:
@@ -209,7 +209,7 @@ Use `Cmd` on macOS and `Ctrl` on Linux/Windows.
 - `Primary++` increase font size
 - `Primary+-` decrease font size
 - `Primary+0` reset font size
-- `Primary+Shift+Delete` move note to trash
+- `Primary+Shift+D` move note to trash
 
 ## Markdown Display
 
