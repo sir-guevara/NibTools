@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   macos:
     name: macOS DMG
@@ -102,3 +105,31 @@ jobs:
         with:
           name: NibNotes-windows-x86_64
           path: nibnotes/NibNotes-windows-x86_64.zip
+
+  publish_release:
+    name: Publish Release Assets
+    runs-on: ubuntu-latest
+    needs:
+      - macos
+      - linux
+      - windows
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Attach builds to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" release-assets/* --clobber
+          else
+            gh release create "$TAG_NAME" release-assets/* \
+              --title "NibNotes $TAG_NAME" \
+              --notes "NibNotes desktop builds." \
+              --verify-tag
+          fi
