@@ -1,0 +1,151 @@
+:root {
+
+    /* Gruvbox Dark */
+
+    --bg: #282828;
+    --bg-soft: #32302f;
+
+    --fg: #ebdbb2;
+    --fg2: #d5c4a1;
+
+    --yellow: #fabd2f;
+    --green: #b8bb26;
+    --blue: #83a598;
+    --orange: #fe8019;
+    --gray: #928374;
+
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+
+    background: var(--bg);
+    color: var(--fg);
+
+    font-family: "JetBrains Mono", monospace;
+
+    line-height: 1.7;
+}
+
+.container {
+
+    width: min(900px, 92%);
+    margin: auto;
+    padding: 80px 0;
+}
+
+header {
+
+    margin-bottom: 60px;
+}
+
+h1 {
+
+    color: var(--yellow);
+    font-size: 3rem;
+    margin-bottom: .4rem;
+}
+
+.tagline {
+
+    color: var(--fg2);
+    max-width: 650px;
+}
+
+.platforms {
+
+    margin-top: 16px;
+    color: var(--green);
+}
+
+.tools {
+
+    display: grid;
+    gap: 28px;
+}
+
+.tool {
+
+    border: 1px solid #504945;
+    background: var(--bg-soft);
+
+    padding: 24px;
+
+    transition: .15s ease;
+}
+
+.tool:hover {
+
+    border-color: var(--yellow);
+}
+
+.tool h2 {
+
+    color: var(--yellow);
+    margin-bottom: 12px;
+}
+
+.tool p {
+
+    color: var(--fg2);
+}
+
+.buttons {
+
+    margin-top: 20px;
+
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.buttons a {
+
+    text-decoration: none;
+
+    color: var(--green);
+
+    border: 1px solid var(--green);
+
+    padding: 8px 14px;
+
+    transition: .15s;
+}
+
+.buttons a:hover {
+
+    background: var(--green);
+    color: var(--bg);
+}
+
+.coming {
+
+    opacity: .8;
+}
+
+.soon {
+
+    display: inline-block;
+
+    margin-top: 18px;
+
+    color: var(--orange);
+
+    border: 1px solid var(--orange);
+
+    padding: 6px 12px;
+}
+
+footer {
+
+    margin-top: 80px;
+
+    color: var(--gray);
+
+    font-size: .9rem;
+}

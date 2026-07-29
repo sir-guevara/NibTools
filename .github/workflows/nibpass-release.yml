@@ -1,0 +1,98 @@
+name: NibPass Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish assets to, for example nibpass-v0.1.0"
+        required: false
+        type: string
+  push:
+    tags:
+      - "nibpass-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: NibPass macOS universal
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: nibpass
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+      - name: Build macOS binaries
+        run: |
+          cargo build --release --target x86_64-apple-darwin
+          cargo build --release --target aarch64-apple-darwin
+          mkdir -p target/release-universal
+          lipo -create \
+            target/x86_64-apple-darwin/release/nibpass \
+            target/aarch64-apple-darwin/release/nibpass \
+            -output target/release-universal/nibpass
+      - name: Package macOS tarball
+        run: ./scripts/package.sh macos-universal target/release-universal/nibpass
+      - name: Upload macOS tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: nibpass-macos-universal
+          path: nibpass/dist/nibpass-macos-universal.tar.gz
+
+  linux:
+    name: NibPass Linux x86_64
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nibpass
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+      - name: Build Linux binary
+        run: cargo build --release --target x86_64-unknown-linux-musl
+      - name: Package Linux tarball
+        run: ./scripts/package.sh linux-x86_64 target/x86_64-unknown-linux-musl/release/nibpass
+      - name: Upload Linux tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: nibpass-linux-x86_64
+          path: nibpass/dist/nibpass-linux-x86_64.tar.gz
+
+  publish_release:
+    name: Publish NibPass Release
+    runs-on: ubuntu-latest
+    needs:
+      - macos
+      - linux
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.release_tag != ''
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download build artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Attach builds to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.inputs.release_tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" release-assets/* --clobber
+          else
+            git fetch --tags origin "$TAG_NAME" || true
+            if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+              git tag "$TAG_NAME"
+              git push origin "$TAG_NAME"
+            fi
+            gh release create "$TAG_NAME" release-assets/* \
+              --title "NibPass ${TAG_NAME#nibpass-v}" \
+              --notes "NibPass terminal builds for macOS and Linux." \
+              --verify-tag
+          fi
