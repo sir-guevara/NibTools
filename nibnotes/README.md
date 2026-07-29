@@ -148,6 +148,7 @@ choose_notes_dir = "Primary+Shift+O"
 save = "Primary+S"
 save_quit = "Primary+Q"
 show_help = "Primary+M"
+rename_note = "Primary+L"
 insert_checkbox = "Primary+T"
 toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
@@ -201,6 +202,7 @@ Use `Cmd` on macOS and `Ctrl` on Linux/Windows.
 - `Primary+N` new note
 - `Primary+O` quick open
 - `Primary+Shift+O` choose notes folder
+- `Primary+L` rename note
 - `Primary+S` save
 - `Primary+Q` save and quit
 - `Primary+M` show keyboard help

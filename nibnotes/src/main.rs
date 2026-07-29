@@ -112,6 +112,15 @@ listbox row:selected {
   box-shadow: none;
 }
 
+.rename-panel {
+  min-width: 420px;
+}
+
+.rename-entry,
+.rename-entry text {
+  color: #b8bb26;
+}
+
 .quick-entry {
   min-height: 25px;
   padding: 4px 9px;
@@ -284,6 +293,15 @@ listbox row:selected {
   background: #15151f;
   border: 1px solid #313244;
   box-shadow: none;
+}
+
+.rename-panel {
+  min-width: 420px;
+}
+
+.rename-entry,
+.rename-entry text {
+  color: #a6e3a1;
 }
 
 .quick-entry {
@@ -465,6 +483,7 @@ choose_notes_dir = "Primary+Shift+O"
 save = "Primary+S"
 save_quit = "Primary+Q"
 show_help = "Primary+M"
+rename_note = "Primary+L"
 insert_checkbox = "Primary+T"
 toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
@@ -509,6 +528,7 @@ choose_notes_dir = "Primary+Shift+O"
 save = "Primary+S"
 save_quit = "Primary+Q"
 show_help = "Primary+M"
+rename_note = "Primary+L"
 insert_checkbox = "Primary+T"
 toggle_checkbox = "Primary+Enter"
 increase_font = "Primary+Plus"
@@ -732,6 +752,7 @@ enum Action {
     Save,
     SaveQuit,
     ShowHelp,
+    RenameNote,
     InsertCheckbox,
     ToggleCheckbox,
     IncreaseFont,
@@ -803,11 +824,15 @@ impl KeyMap {
         let bindings = default_key_specs()
             .into_iter()
             .filter_map(|(name, action, fallback)| {
-                let spec = config
+                let mut spec = config
                     .keys
                     .get(name)
                     .map(String::as_str)
                     .unwrap_or(fallback);
+                if name == "trash_note" && spec.trim().eq_ignore_ascii_case("Primary+Shift+Delete")
+                {
+                    spec = fallback;
+                }
                 KeyBinding::parse(spec).map(|binding| (action, binding))
             })
             .collect();
@@ -832,6 +857,8 @@ struct AppState {
     quick_panel: gtk::Box,
     quick_entry: gtk::SearchEntry,
     quick_list: gtk::ListBox,
+    rename_panel: gtk::Box,
+    rename_entry: gtk::Entry,
     font_provider: gtk::CssProvider,
     settings: RefCell<Settings>,
     dot_config: DotConfig,
@@ -1092,11 +1119,15 @@ fn build_ui(app: &gtk::Application) {
     let (quick_panel, quick_entry, quick_list) = build_quick_panel();
     quick_panel.set_visible(false);
 
+    let (rename_panel, rename_entry) = build_rename_panel();
+    rename_panel.set_visible(false);
+
     let overlay = gtk::Overlay::new();
     overlay.set_child(Some(&scroller));
     overlay.add_overlay(&empty_hint);
     overlay.add_overlay(&help_panel);
     overlay.add_overlay(&quick_panel);
+    overlay.add_overlay(&rename_panel);
 
     let window = gtk::ApplicationWindow::builder()
         .application(app)
@@ -1118,6 +1149,8 @@ fn build_ui(app: &gtk::Application) {
         quick_panel,
         quick_entry,
         quick_list,
+        rename_panel,
+        rename_entry,
         font_provider,
         settings: RefCell::new(settings),
         dot_config,
@@ -1171,6 +1204,7 @@ fn build_help_panel() -> gtk::Box {
 {primary} O          Open note list\n\
 {primary} Shift O    Choose notes folder\n\
 {primary} N          New note\n\
+{primary} L          Rename note\n\
 {primary} S          Save\n\
 {primary} Shift D    Move note to trash\n\
 {primary} Q          Save and close\n\n\
@@ -1238,9 +1272,35 @@ fn build_quick_panel() -> (gtk::Box, gtk::SearchEntry, gtk::ListBox) {
     let list = gtk::ListBox::new();
     list.add_css_class("quick-list");
     list.set_selection_mode(gtk::SelectionMode::Single);
-    panel.append(&list);
+    list.set_vexpand(true);
+
+    let scroller = gtk::ScrolledWindow::builder()
+        .vexpand(true)
+        .hexpand(true)
+        .child(&list)
+        .build();
+    scroller.add_css_class("quick-list-scroll");
+    panel.append(&scroller);
 
     (panel, entry, list)
+}
+
+fn build_rename_panel() -> (gtk::Box, gtk::Entry) {
+    let panel = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    panel.add_css_class("panel");
+    panel.add_css_class("quick-panel");
+    panel.add_css_class("rename-panel");
+    panel.set_halign(gtk::Align::Center);
+    panel.set_valign(gtk::Align::Center);
+
+    let entry = gtk::Entry::new();
+    entry.set_placeholder_text(Some("Rename:"));
+    entry.set_activates_default(true);
+    entry.add_css_class("quick-entry");
+    entry.add_css_class("rename-entry");
+    panel.append(&entry);
+
+    (panel, entry)
 }
 
 fn connect_handlers(state: &Rc<AppState>) {
@@ -1317,6 +1377,26 @@ fn connect_handlers(state: &Rc<AppState>) {
     state.quick_list.connect_selected_rows_changed(move |_| {
         update_quick_selection_markers(&selection_state);
     });
+
+    let rename_key = gtk::EventControllerKey::new();
+    let rename_key_state = state.clone();
+    rename_key.connect_key_pressed(move |_, key, _, _| {
+        if key == gdk::Key::Escape {
+            close_rename_note(&rename_key_state);
+            return true.into();
+        }
+        if key == gdk::Key::Return || key == gdk::Key::KP_Enter {
+            confirm_rename_note(&rename_key_state);
+            return true.into();
+        }
+        false.into()
+    });
+    state.rename_entry.add_controller(rename_key);
+
+    let rename_activate_state = state.clone();
+    state.rename_entry.connect_activate(move |_| {
+        confirm_rename_note(&rename_activate_state);
+    });
 }
 
 fn handle_key(state: &Rc<AppState>, key: gdk::Key, modifier: gdk::ModifierType) -> bool {
@@ -1327,6 +1407,10 @@ fn handle_key(state: &Rc<AppState>, key: gdk::Key, modifier: gdk::ModifierType) 
         }
         if state.quick_panel.is_visible() {
             close_quick_open(state);
+            return true;
+        }
+        if state.rename_panel.is_visible() {
+            close_rename_note(state);
             return true;
         }
     }
@@ -1355,10 +1439,12 @@ fn run_action(state: &Rc<AppState>, action: Action) {
         Action::ChooseNotesDir => choose_notes_dir(state),
         Action::Save => save_note(state),
         Action::SaveQuit => {
+            discard_blank_generated_note(state);
             save_note(state);
             state.window.close();
         }
         Action::ShowHelp => state.help_panel.set_visible(!state.help_panel.is_visible()),
+        Action::RenameNote => rename_current_note_dialog(state),
         Action::InsertCheckbox => insert_checkbox(state),
         Action::ToggleCheckbox => toggle_current_line(state),
         Action::IncreaseFont => change_font_size(state, 1),
@@ -1443,6 +1529,10 @@ fn save_note(state: &Rc<AppState>) {
         return;
     };
     let text = buffer_text(&state.buffer);
+    if text.trim().is_empty() && is_generated_note_path(&path) {
+        discard_blank_generated_note(state);
+        return;
+    }
     let temporary = path.with_extension("tmp");
     let result = fs::File::create(&temporary)
         .and_then(|mut file| {
@@ -1476,15 +1566,20 @@ fn rename_from_title(state: &Rc<AppState>, path: &Path, text: &str) -> Option<Pa
     }
 
     let dir = state.settings.borrow().notes_dir.clone();
-    let mut destination = dir.join(format!("{slug}.md"));
-    let mut counter = 2;
-    while destination.exists() {
-        destination = dir.join(format!("{slug}-{counter}.md"));
-        counter += 1;
-    }
+    let destination = unique_note_path(&dir, &slug, Some(path));
 
     fs::rename(path, &destination).ok()?;
     Some(destination)
+}
+
+fn unique_note_path(dir: &Path, stem: &str, current: Option<&Path>) -> PathBuf {
+    let mut destination = dir.join(format!("{stem}.md"));
+    let mut counter = 2;
+    while destination.exists() && current != Some(destination.as_path()) {
+        destination = dir.join(format!("{stem}-{counter}.md"));
+        counter += 1;
+    }
+    destination
 }
 
 fn is_generated_note_path(path: &Path) -> bool {
@@ -1512,6 +1607,56 @@ fn new_note(state: &Rc<AppState>) {
     let _ = fs::write(&path, "");
     load_note(state, path);
     state.view.grab_focus();
+}
+
+fn rename_current_note_dialog(state: &Rc<AppState>) {
+    let Some(path) = state.current_note.borrow().clone() else {
+        return;
+    };
+    resize_rename_panel(state);
+    state.rename_entry.set_text(&note_file_label(&path));
+    state.rename_panel.set_visible(true);
+    state.rename_entry.grab_focus();
+    state.rename_entry.select_region(0, -1);
+}
+
+fn resize_rename_panel(state: &Rc<AppState>) {
+    let width = (state.window.width() as f64 * 0.7).round() as i32;
+    state.rename_panel.set_size_request(width.max(360), -1);
+}
+
+fn confirm_rename_note(state: &Rc<AppState>) {
+    let name = state.rename_entry.text().to_string();
+    rename_current_note_to(state, &name);
+    close_rename_note(state);
+}
+
+fn close_rename_note(state: &Rc<AppState>) {
+    state.rename_panel.set_visible(false);
+    state.view.grab_focus();
+}
+
+fn rename_current_note_to(state: &Rc<AppState>, requested_name: &str) {
+    save_if_dirty(state);
+    let Some(path) = state.current_note.borrow().clone() else {
+        return;
+    };
+    let Some(stem) = note_name_slug(requested_name) else {
+        return;
+    };
+
+    let dir = state.settings.borrow().notes_dir.clone();
+    let destination = unique_note_path(&dir, &stem, Some(&path));
+    if destination == path {
+        return;
+    }
+    if fs::rename(&path, &destination).is_ok() {
+        *state.current_note.borrow_mut() = Some(destination.clone());
+        state.disk_mtime.set(mtime_ns(&destination));
+        let mut settings = state.settings.borrow_mut();
+        settings.last_note = Some(destination);
+        settings.save();
+    }
 }
 
 fn trash_current_note(state: &Rc<AppState>) {
@@ -1601,10 +1746,12 @@ fn populate_quick_open(state: &Rc<AppState>) {
     }
 
     let query = state.quick_entry.text().to_string().to_lowercase();
+    let mut added = false;
     for path in notes(state)
         .into_iter()
         .filter(|path| note_search_text(state, path).contains(&query))
     {
+        added = true;
         let row = gtk::ListBoxRow::new();
         row.set_selectable(true);
         row.set_activatable(true);
@@ -1612,6 +1759,19 @@ fn populate_quick_open(state: &Rc<AppState>) {
         unsafe {
             row.set_data("path", path);
         }
+        state.quick_list.append(&row);
+    }
+
+    if !added {
+        let row = gtk::ListBoxRow::new();
+        row.set_selectable(false);
+        row.set_activatable(false);
+        let label = gtk::Label::builder()
+            .label("No notes found")
+            .xalign(0.0)
+            .build();
+        label.add_css_class("quick-row-title");
+        row.set_child(Some(&label));
         state.quick_list.append(&row);
     }
 
@@ -2136,9 +2296,32 @@ fn check_external_change(state: &Rc<AppState>) {
 }
 
 fn save_if_dirty(state: &Rc<AppState>) {
+    if discard_blank_generated_note(state) {
+        return;
+    }
     if buffer_text(&state.buffer) != *state.last_saved.borrow() {
         save_note(state);
     }
+}
+
+fn discard_blank_generated_note(state: &Rc<AppState>) -> bool {
+    let Some(path) = state.current_note.borrow().clone() else {
+        return false;
+    };
+    if !is_generated_note_path(&path) || !buffer_text(&state.buffer).trim().is_empty() {
+        return false;
+    }
+
+    let _ = fs::remove_file(&path);
+    *state.current_note.borrow_mut() = None;
+    *state.last_saved.borrow_mut() = String::new();
+    state.disk_mtime.set(0);
+    let mut settings = state.settings.borrow_mut();
+    if settings.last_note.as_ref() == Some(&path) {
+        settings.last_note = None;
+    }
+    settings.save();
+    true
 }
 
 fn change_font_size(state: &Rc<AppState>, amount: i32) {
@@ -2222,33 +2405,43 @@ fn note_slug(text: &str) -> Option<String> {
         if title.is_empty() {
             continue;
         }
-        let ascii = title
-            .chars()
-            .filter_map(|character| {
-                if character.is_ascii_alphanumeric() {
-                    Some(character.to_ascii_lowercase())
-                } else if character.is_whitespace() || "-_./".contains(character) {
-                    Some('-')
-                } else {
-                    None
-                }
-            })
-            .collect::<String>();
-        let slug = regex::Regex::new("-+")
-            .expect("valid slug regex")
-            .replace_all(ascii.trim_matches('-'), "-")
-            .to_string();
-        if !slug.is_empty() {
-            return Some(
-                slug.chars()
-                    .take(64)
-                    .collect::<String>()
-                    .trim_matches('-')
-                    .to_string(),
-            );
-        }
+        return note_name_slug(&title);
     }
     None
+}
+
+fn note_name_slug(input: &str) -> Option<String> {
+    let mut name = input.trim();
+    if name.to_lowercase().ends_with(".md") {
+        name = &name[..name.len().saturating_sub(3)];
+    }
+    let title = clean_title(name);
+    if title.is_empty() {
+        return None;
+    }
+    let ascii = title
+        .chars()
+        .filter_map(|character| {
+            if character.is_ascii_alphanumeric() {
+                Some(character.to_ascii_lowercase())
+            } else if character.is_whitespace() || "-_./".contains(character) {
+                Some('-')
+            } else {
+                None
+            }
+        })
+        .collect::<String>();
+    let slug = regex::Regex::new("-+")
+        .expect("valid slug regex")
+        .replace_all(ascii.trim_matches('-'), "-")
+        .to_string();
+    let slug = slug
+        .chars()
+        .take(64)
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string();
+    (!slug.is_empty()).then_some(slug)
 }
 
 fn clean_title(line: &str) -> String {
@@ -2400,6 +2593,7 @@ fn default_key_specs() -> Vec<(&'static str, Action, &'static str)> {
         ("save", Action::Save, "Primary+S"),
         ("save_quit", Action::SaveQuit, "Primary+Q"),
         ("show_help", Action::ShowHelp, "Primary+M"),
+        ("rename_note", Action::RenameNote, "Primary+L"),
         ("insert_checkbox", Action::InsertCheckbox, "Primary+T"),
         ("toggle_checkbox", Action::ToggleCheckbox, "Primary+Enter"),
         ("increase_font", Action::IncreaseFont, "Primary+Plus"),
