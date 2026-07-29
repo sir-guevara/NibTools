@@ -1,333 +1,127 @@
 # NibTools
 
-> Cross-platform, self-managed, blazingly fast utilities written in Rust.
+Terminal-first, self-managed tools written in Rust.
 
-No cloud.
-No subscriptions.
-No unnecessary complexity.
+The main project here is NibPass: a small password manager for people who want local encrypted files, git history, 2FA codes, and simple command-line workflows without a hosted account.
 
-Your data stays yours.
+## Install NibPass
 
----
+macOS and Linux:
 
-## Philosophy
+```bash
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash
+nibpass install-shell
+```
 
-NibTools are built with a few simple principles:
+Install a specific release:
 
-- ⚡ Blazingly fast
-- 🦀 Written in Rust
-- 💻 Cross-platform (macOS, Linux, Windows)
-- 🔒 Self-managed
-- 📦 Small binaries
-- 🎨 Minimal UI
-- 🛠 Open Source
+```bash
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash -s -- --version nibpass-v0.1.0
+```
 
----
+Install somewhere else:
 
-# Tools
+```bash
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash -s -- --bin-dir /usr/local/bin
+```
 
-## NibPass
+Release downloads are published on tags named `nibpass-v*` and include:
 
-A self-managed password manager focused on privacy, speed, and simplicity.
+```text
+nibpass-macos-universal.tar.gz
+nibpass-linux-x86_64.tar.gz
+```
 
-Features
+## NibPass Workflow
 
-- Local-first
-- Fast encrypted vault
-- Cross-platform
-- Open source
+Create a vault:
 
-Downloads
+```bash
+nibpass init
+```
 
-- macOS
-- Linux
-- Windows
+Add accounts:
 
-Source
+```bash
+nibpass add github --generate
+nibpass add github --username octo --url https://github.com
+nibpass github add 2fa
+```
 
-https://github.com/nibtools/nibpass
+Use secrets:
 
----
+```bash
+nibpass ls
+nibpass show github
+nibpass -c github
+nibpass 2fa -c github
+```
 
-## NibNotes
+Unlock once for the session:
 
-Minimal notes without the clutter.
+```bash
+nibpass agent
+nibpass agent --ttl 900
+nibpass agent lock
+```
 
-Features
+Backup and restore:
 
-- Plain text
-- Fast startup
-- Local storage
-- Cross-platform
+```bash
+nibpass sync init <private-git-repo>
+nibpass recovery export ~/nibpass-recovery.key
 
-Downloads
+git clone <private-git-repo> ~/.local/share/nibpass
+nibpass recovery import ~/nibpass-recovery.key
+```
 
-- macOS
-- Linux
-- Windows
+Import from other stores:
 
-Source
+```bash
+nibpass import pass ~/.password-store
+nibpass import bitwarden ~/Downloads/bitwarden.csv
+nibpass import chrome ~/Downloads/chrome-passwords.csv
+nibpass import apple ~/Downloads/passwords.csv
+nibpass import firefox ~/Downloads/firefox-passwords.csv
+nibpass import 1password ~/Downloads/1password.csv
+```
 
-https://github.com/nibtools/nibnotes
+## Security Model
 
----
+NibPass uses:
 
-## NibClip
+- something you know: your master password
+- something you have: a local device key stored outside the git vault
+- Argon2id to unlock a random vault key
+- XChaCha20-Poly1305 to encrypt account entries
+- git for encrypted history and sync
 
-A lightweight clipboard manager that stays out of your way.
+Git stores encrypted vault files only. The recovery key is backed up separately, and the master password stays in your head.
 
-Features
+## Build From Source
 
-- Clipboard history
-- Search
-- Lightweight
-- Native performance
+```bash
+cd nibpass
+cargo build --release
+```
 
-Downloads
+Optional GTK GUI:
 
-- macOS
-- Linux
-- Windows
+```bash
+cargo run --features gui -- gui
+```
 
-Source
+## Release NibPass
 
-https://github.com/nibtools/nibclip
+```bash
+git tag nibpass-v0.1.0
+git push origin nibpass-v0.1.0
+```
 
----
+The GitHub Actions workflow builds macOS and Linux tarballs and attaches them to the release.
 
-## NibMail
+## Other Tools
 
-Minimal email client.
-
-Status
-
-🚧 Coming Soon
-
-Goals
-
-- IMAP
-- SMTP
-- Offline support
-- Fast search
-- Keyboard driven
-- Privacy focused
-
----
-
-# Installation
-
-Download the latest release for your platform from each project's Releases page.
-
-Supported platforms
-
-- macOS
-- Linux
-- Windows
-
----
-
-# Why NibTools?
-
-Modern software has become unnecessarily complicated.
-
-NibTools aims to build software that starts instantly, uses little memory, respects your privacy, and remains completely under your control.
-
-No telemetry.
-
-No mandatory accounts.
-
-No cloud lock-in.
-
-Just fast software.
-
----
-
-# Built With
-
-- Rust
-- Native desktop technologies
-- Love for simple software
-
----
-
-# Contributing
-
-Issues, feature requests, an# NibTools
-
-> Cross-platform, self-managed, blazingly fast utilities written in Rust.
-
-No cloud.
-No subscriptions.
-No unnecessary complexity.
-
-Your data stays yours.
-
----
-
-## Philosophy
-
-NibTools are built with a few simple principles:
-
-- ⚡ Blazingly fast
-- 🦀 Written in Rust
-- 💻 Cross-platform (macOS, Linux, Windows)
-- 🔒 Self-managed
-- 📦 Small binaries
-- 🎨 Minimal UI
-- 🛠 Open Source
-
----
-
-# Tools
-
-## NibPass
-
-A self-managed password manager focused on privacy, speed, and simplicity.
-
-Features
-
-- Local-first
-- Fast encrypted vault
-- Cross-platform
-- Open source
-
-Downloads
-
-- macOS
-- Linux
-- Windows
-
-Source
-
-https://github.com/nibtools/nibpass
-
----
-
-## NibNotes
-
-Minimal notes without the clutter.
-
-Features
-
-- Plain text
-- Fast startup
-- Local storage
-- Cross-platform
-
-Downloads
-
-- macOS
-- Linux
-- Windows
-
-Source
-
-https://github.com/nibtools/nibnotes
-
----
-
-## NibClip
-
-A lightweight clipboard manager that stays out of your way.
-
-Features
-
-- Clipboard history
-- Search
-- Lightweight
-- Native performance
-
-Downloads
-
-- macOS
-- Linux
-- Windows
-
-Source
-
-https://github.com/nibtools/nibclip
-
----
-
-## NibMail
-
-Minimal email client.
-
-Status
-
-🚧 Coming Soon
-
-Goals
-
-- IMAP
-- SMTP
-- Offline support
-- Fast search
-- Keyboard driven
-- Privacy focused
-
----
-
-# Installation
-
-Download the latest release for your platform from each project's Releases page.
-
-Supported platforms
-
-- macOS
-- Linux
-- Windows
-
----
-
-# Why NibTools?
-
-Modern software has become unnecessarily complicated.
-
-NibTools aims to build software that starts instantly, uses little memory, respects your privacy, and remains completely under your control.
-
-No telemetry.
-
-No mandatory accounts.
-
-No cloud lock-in.
-
-Just fast software.
-
----
-
-# Built With
-
-- Rust
-- Native desktop technologies
-- Love for simple software
-
----
-
-# Contributing
-
-Issues, feature requests, and pull requests are welcome.
-
-If you have ideas for improving performance, usability, or security, we'd love to hear them.
-
----
-
-# License
-
-MIT
-
----
-
-Made with 🦀 Rust.d pull requests are welcome.
-
-If you have ideas for improving performance, usability, or security, i'd love to hear them.
-
----
-
-# License
-
-MIT
-
----
-
-Made with 🦀 Rust.
+- NibNotes: minimal notes
+- NibClip: lightweight clipboard manager
+- NibMail: planned minimal email client

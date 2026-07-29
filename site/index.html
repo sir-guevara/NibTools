@@ -4,97 +4,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NibTools</title>
-
+    <title>NibPass by NibTools</title>
+    <meta name="description" content="NibPass is a terminal-first, self-managed password manager with encrypted local files, git history, and 2FA support.">
     <link rel="stylesheet" href="./style.css">
-
-    <!-- JetBrains Mono Nerd Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+    <header class="site-header">
+        <a class="brand" href="./">NibTools</a>
+        <nav aria-label="Primary">
+            <a href="#install">Install</a>
+            <a href="#workflow">Examples</a>
+            <a href="#security">Security</a>
+            <a href="#import">Import</a>
+            <a href="https://github.com/nibtools/nibtools/releases">Releases</a>
+        </nav>
+    </header>
 
-    <div class="container">
-
-        <header>
-            <h1>NibTools</h1>
-            <p class="tagline">
-                Cross-platform, self-managed, blazingly fast utilities written in Rust.
-            </p>
-
-            <div class="platforms">
-                MAC · Linux · Windows
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">macOS · Linux · Rust · Gruvbox</p>
+                <h1>NibPass</h1>
+                <p class="lede">
+                    A terminal-first password manager with local encrypted files, automatic git history, 2FA codes, and no hosted account.
+                </p>
+                <div class="hero-actions" id="install">
+                    <a class="button primary" href="https://github.com/nibtools/nibtools/releases">Download release</a>
+                    <a class="button" href="https://github.com/nibtools/nibtools/tree/main/nibpass">View source</a>
+                </div>
             </div>
-        </header>
-
-        <section class="tools">
-
-            <article class="tool">
-                <h2>NibPass</h2>
-                <p>
-                    A self-managed password manager focused on speed, privacy, and simplicity.
-                </p>
-
-                <div class="buttons">
-                    <a href="#">Download</a>
-                    <a href="https://github.com/nibtools/nibpass">View Code</a>
+            <div class="terminal" aria-label="NibPass install command">
+                <div class="terminal-top">
+                    <span></span>
+                    <span></span>
+                    <span></span>
                 </div>
-            </article>
-
-            <article class="tool">
-                <h2>NibNotes</h2>
-                <p>
-                    Minimal self-managed notes with zero distractions.
-                </p>
-
-                <div class="buttons">
-                    <a href="#">Download</a>
-                    <a href="https://github.com/nibtools/nibnotes">View Code</a>
-                </div>
-            </article>
-
-            <article class="tool">
-                <h2>NibClip</h2>
-                <p>
-                    A lightweight clipboard manager that stays out of your way.
-                </p>
-
-                <div class="buttons">
-                    <a href="#">Download</a>
-                    <a href="https://github.com/nibtools/nibclip">View Code</a>
-                </div>
-            </article>
-
-            <article class="tool coming">
-                <h2>NibMail</h2>
-
-                <p>
-                    Minimal email client.
-                </p>
-
-                <span class="soon">
-                    Coming Soon
-                </span>
-
-            </article>
-
+                <pre><code>curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash
+nibpass install-shell
+nibpass init</code></pre>
+            </div>
         </section>
 
-        <footer>
-            <p>
-                Built with Rust. No cloud required. Your data stays yours.
-            </p>
+        <section class="band quick-start" aria-labelledby="quick-start-title">
+            <div>
+                <p class="section-label">Install</p>
+                <h2 id="quick-start-title">Downloadable from GitHub Releases.</h2>
+                <p>
+                    The installer detects macOS or Linux, downloads the matching tarball, installs the binary to <code>~/.local/bin</code>, then lets NibPass add shell setup for zsh, bash, or fish.
+                </p>
+            </div>
+            <pre><code># latest nibpass-v* release
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash
 
-            <p>
-                © 2026 NibTools
-            </p>
-        </footer>
+# specific release
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash -s -- --version nibpass-v0.1.0
 
-    </div>
+# custom binary directory
+curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/install.sh | bash -s -- --bin-dir /usr/local/bin</code></pre>
+        </section>
 
+        <section class="workflow" id="workflow" aria-labelledby="workflow-title">
+            <p class="section-label">Workflow</p>
+            <h2 id="workflow-title">Simple commands for daily use.</h2>
+            <div class="command-grid">
+                <article>
+                    <h3>Create the vault</h3>
+                    <pre><code>nibpass init
+nibpass agent</code></pre>
+                    <p>Unlock once for the current session, or use <code>--ttl</code> for a shorter window.</p>
+                </article>
+                <article>
+                    <h3>Add accounts</h3>
+                    <pre><code>nibpass add github --generate
+nibpass add email --dialog
+nibpass github add 2fa</code></pre>
+                    <p>2FA is added only when an account has it, so normal account creation stays short.</p>
+                </article>
+                <article>
+                    <h3>Use secrets</h3>
+                    <pre><code>nibpass ls
+nibpass show github
+nibpass -c github
+nibpass 2fa -c github</code></pre>
+                    <p>Clipboard copies are cleared after 30 seconds when the platform clipboard allows it.</p>
+                </article>
+                <article>
+                    <h3>Change safely</h3>
+                    <pre><code>nibpass edit github
+nibpass rotate master
+nibpass git undo
+nibpass audit</code></pre>
+                    <p>NibPass auto-commits successful changes so the vault has normal git history.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="band" id="security" aria-labelledby="security-title">
+            <div>
+                <p class="section-label">Security</p>
+                <h2 id="security-title">Something you know plus something you have.</h2>
+                <p>
+                    NibPass combines your master password with a local device key. Argon2id unlocks a random vault key, and account entries are encrypted with XChaCha20-Poly1305.
+                </p>
+            </div>
+            <ul class="feature-list">
+                <li>Git stores encrypted <code>.nib</code> files only.</li>
+                <li>The local device key stays outside the git-tracked vault.</li>
+                <li>The agent keeps the vault key in memory and expires automatically.</li>
+                <li><code>--no-agent</code> forces a master-password prompt for high-risk use.</li>
+            </ul>
+        </section>
+
+        <section class="backup" aria-labelledby="backup-title">
+            <p class="section-label">Backup</p>
+            <h2 id="backup-title">Bring passwords to another computer without trusting a service.</h2>
+            <div class="split">
+                <pre><code># first machine
+nibpass sync init &lt;private-git-repo&gt;
+nibpass recovery export ~/nibpass-recovery.key
+nibpass sync</code></pre>
+                <pre><code># new machine
+git clone &lt;private-git-repo&gt; ~/.local/share/nibpass
+nibpass recovery import ~/nibpass-recovery.key
+nibpass agent
+nibpass ls</code></pre>
+            </div>
+        </section>
+
+        <section class="band" id="import" aria-labelledby="import-title">
+            <div>
+                <p class="section-label">Import</p>
+                <h2 id="import-title">Move in from other password stores.</h2>
+                <p>
+                    Import from Linux pass or CSV exports from common password managers and browsers. Imported records are re-encrypted into the native NibPass vault.
+                </p>
+            </div>
+            <pre><code>nibpass import pass ~/.password-store
+nibpass import bitwarden ~/Downloads/bitwarden.csv
+nibpass import chrome ~/Downloads/chrome-passwords.csv
+nibpass import apple ~/Downloads/passwords.csv
+nibpass import firefox ~/Downloads/firefox-passwords.csv
+nibpass import 1password ~/Downloads/1password.csv</code></pre>
+        </section>
+
+        <section class="tools" aria-labelledby="tools-title">
+            <p class="section-label">NibTools</p>
+            <h2 id="tools-title">More small local-first tools.</h2>
+            <div class="tool-grid">
+                <article>
+                    <h3>NibNotes</h3>
+                    <p>Minimal notes without the clutter.</p>
+                </article>
+                <article>
+                    <h3>NibClip</h3>
+                    <p>A lightweight clipboard manager that stays out of your way.</p>
+                </article>
+                <article>
+                    <h3>NibMail</h3>
+                    <p>Planned minimal email client.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built with Rust. No cloud account required. Your data stays yours.</p>
+        <p>© 2026 NibTools</p>
+    </footer>
 </body>
 
 </html>

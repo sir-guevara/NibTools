@@ -43,6 +43,37 @@ curl -fsSL https://raw.githubusercontent.com/nibtools/nibtools/main/nibpass/inst
 
 If the repository name changes, set `NIBPASS_REPO=owner/repo` before running the installer.
 
+## Quick Start
+
+```bash
+nibpass init
+nibpass add github --generate
+nibpass github add 2fa
+nibpass ls
+nibpass -c github
+nibpass 2fa -c github
+```
+
+Session unlock:
+
+```bash
+nibpass agent
+nibpass agent --ttl 900
+nibpass agent lock
+```
+
+Backup and restore:
+
+```bash
+nibpass sync init <private-git-repo>
+nibpass recovery export ~/nibpass-recovery.key
+
+git clone <private-git-repo> ~/.local/share/nibpass
+nibpass recovery import ~/nibpass-recovery.key
+nibpass agent
+nibpass ls
+```
+
 ## Build
 
 ```bash
