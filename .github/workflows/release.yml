@@ -2,6 +2,11 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish assets to, for example v0.1.0"
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -113,8 +118,9 @@ jobs:
       - macos
       - linux
       - windows
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.release_tag != ''
     steps:
+      - uses: actions/checkout@v5
       - name: Download build artifacts
         uses: actions/download-artifact@v5
         with:
@@ -123,11 +129,16 @@ jobs:
       - name: Attach builds to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ github.event.inputs.release_tag || github.ref_name }}
         run: |
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             gh release upload "$TAG_NAME" release-assets/* --clobber
           else
+            git fetch --tags origin "$TAG_NAME" || true
+            if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+              git tag "$TAG_NAME"
+              git push origin "$TAG_NAME"
+            fi
             gh release create "$TAG_NAME" release-assets/* \
               --title "NibNotes $TAG_NAME" \
               --notes "NibNotes desktop builds." \
