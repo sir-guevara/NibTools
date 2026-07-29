@@ -14,7 +14,7 @@ jobs:
       run:
         working-directory: nibnotes
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - name: Install native dependencies
         run: brew install gtk4 gtksourceview5 pkg-config
@@ -44,7 +44,7 @@ jobs:
       run:
         working-directory: nibnotes
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - name: Install native dependencies
         run: |
@@ -72,7 +72,7 @@ jobs:
         shell: msys2 {0}
         working-directory: nibnotes
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -82,7 +82,7 @@ jobs:
             mingw-w64-x86_64-gtk4
             mingw-w64-x86_64-gtksourceview5
             mingw-w64-x86_64-pkgconf
-            mingw-w64-x86_64-zip
+            zip
       - name: Build release exe
         run: cargo build --release
       - name: Package exe with GTK runtime DLLs
